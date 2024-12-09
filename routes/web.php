@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\BarangKeluarController;
+use App\Http\Controllers\BarangMasukController;
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -23,4 +27,11 @@ Route::get('/register', function () {
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    Route::resource('barang-masuk', BarangMasukController::class);
+    Route::resource('barang-keluar', BarangKeluarController::class);
+    Route::resource('logs', LogController::class);
+    Route::resource('users', UserController::class);
+
+});
