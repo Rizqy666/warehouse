@@ -8,15 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class BarangKeluar extends Model
 {
     use HasFactory;
-
     protected $table = 'barang_keluars';
 
-    protected $fillable = [
-        'barang_masuk_id',
-        'user_id',
-        'jumlah',
-        'keterangan'
-    ];
+    protected $fillable = ['user_id', 'barang_masuk_id', 'jumlah', 'tanggal', 'keterangan'];
 
     public function barangMasuk()
     {

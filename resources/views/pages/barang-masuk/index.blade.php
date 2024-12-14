@@ -15,6 +15,7 @@
         <div class="card-header">
             <h3 class="card-title">DataTable with default features</h3>
         </div>
+
         <!-- /.card-header -->
         <div class="card-body">
             <table id="example1" class="table table-bordered table-striped">
@@ -24,28 +25,52 @@
                         <th>Kode Barang</th>
                         <th>Nama Barang</th>
                         <th>Jumlah Barang</th>
-                        <th>Tanggal Barang</th>
-                        <th>Keterangan</th>
+                        <th>Tanggal Masuk</th>
+                        <th>Harga</th>
                         <th>Foto</th>
+                        <th>Keterangan</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($barang as $item)
+                    @foreach ($stockBarangMasuk as $item)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $item->kode_barang }}</td>
                             <td>{{ $item->nama_barang }}</td>
-                            <td class="text-center">{{ $item->jumlah }}</td>
+                            <td class="text-center">{{ $item->stok }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</td>
-                            <td>{{ $item->keterangan }}</td>
+
+                            <td>Rp. {{ number_format($item->harga, 0, ',', '.') }}</td>
                             <td>
-                                {{-- <p>Path: {{ asset('storage/' . $item->foto) }}</p> --}}
-                                @if ($item->foto && file_exists(public_path('storage/' . $item->foto)))
-                                    <img src="{{ asset('storage/' . $item->foto) }}" alt="Image" width="75"
-                                        height="75" style="object-fit: cover; display: block;" />
+                                @if ($item->foto && file_exists(public_path('storage/barang_foto/' . $item->foto)))
+                                    <img src="{{ asset('storage/barang_foto/' . $item->foto) }}" alt="Image"
+                                        width="75" height="75" style="object-fit: cover; display: block;" />
                                 @else
                                     <span>No Image Available</span>
                                 @endif
+
+                            </td>
+                            <td>{{ $item->keterangan ?? '-' }}</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" data-toggle="modal"
+                                    data-target="#editModal{{ $item->id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form action="{{ route('barang.masuk.destroy', $item->id) }}" method="POST"
+                                    class="d-inline delete-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm"><i
+                                            class="fas fa-trash"></i></button>
+                                </form>
+                                {{-- <form action="{{ route('barang.masuk.destroy', $item->id) }}" method="POST"
+                                    class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm"><i
+                                            class="fas fa-trash"></i></button>
+                                </form> --}}
                             </td>
                         </tr>
                     @endforeach
@@ -56,9 +81,11 @@
                         <th>Kode Barang</th>
                         <th>Nama Barang</th>
                         <th>Jumlah Barang</th>
-                        <th>Tanggal Barang</th>
-                        <th>Keterangan</th>
+                        <th>Tanggal Masuk</th>
+                        <th>Harga</th>
                         <th>Foto</th>
+                        <th>Keterangan</th>
+                        <th>Action</th>
                     </tr>
                 </tfoot>
             </table>
@@ -75,31 +102,33 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form action="{{ route('barang-masuk.store') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('barang.masuk.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="form-group">
                             <label for="nama_barang">Nama Barang</label>
                             <input type="text" class="form-control @error('nama_barang') is-invalid @enderror"
                                 id="nama_barang" name="nama_barang" value="{{ old('nama_barang') }}"
-                                oninput="this.value = this.value.toUpperCase(); this.value = this.value.replace(/ /g, '-');">
+                                oninput="this.value = this.value this.value = this.value.replace(/ /g,);">
                             @error('nama_barang')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
                                 </span>
                             @enderror
                         </div>
+
                         <div class="form-group">
-                            <label for="jumlah">Jumlah Barang</label>
-                            <input type="number" class="form-control @error('jumlah') is-invalid @enderror" id="jumlah"
-                                name="jumlah" value="{{ old('jumlah') }}">
-                            @error('jumlah')
+                            <label for="stok">Jumlah Barang</label>
+                            <input type="number" class="form-control @error('stok') is-invalid @enderror" id="stok"
+                                name="stok" value="{{ old('stok') }}">
+                            @error('stok')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
                                 </span>
                             @enderror
                         </div>
+
                         <div class="form-group">
-                            <label for="tanggal">Tanggal Barang</label>
+                            <label for="tanggal">Tanggal Barang Masuk</label>
                             <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal"
                                 name="tanggal" value="{{ old('tanggal') }}">
                             @error('tanggal')
@@ -108,6 +137,7 @@
                                 </span>
                             @enderror
                         </div>
+
                         <div class="form-group">
                             <label for="foto">Foto</label>
                             <div class="input-group mb-3">
@@ -118,13 +148,16 @@
                                 </div>
                             </div>
                             <div style="margin-bottom: 1rem;"></div>
+
                             @if (isset($barang->foto))
-                                <img src="{{ asset('storage/' . $barang->foto) }}" id="preview-image" width="75"
-                                    height="75" style="object-fit: cover;" />
+                                <p>Foto path: {{ asset('storage/barang_foto/' . $barang->foto) }}</p>
+                                <img src="{{ asset('storage/barang_foto/' . $barang->foto) }}" id="preview-image"
+                                    width="75" height="75" style="object-fit: cover;" />
                             @else
                                 <img src="" id="preview-image" style="display: none; object-fit: cover;"
                                     width="75" height="75" />
                             @endif
+
                             @error('foto')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
@@ -132,10 +165,21 @@
                             @enderror
                         </div>
 
+
+
+                        <div class="form-group">
+                            <label for="harga">Harga</label>
+                            <input type="number" class="form-control @error('harga') is-invalid @enderror"
+                                id="harga" name="harga">{{ old('harga') }}</input>
+                            @error('harga')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                        </div>
                         <div class="form-group">
                             <label for="keterangan">Keterangan</label>
-                            <textarea class="form-control @error('keterangan') is-invalid @enderror" id="keterangan" name="keterangan"
-                                value="{{ old('keterangan') }}"></textarea>
+                            <textarea class="form-control @error('keterangan') is-invalid @enderror" id="keterangan" name="keterangan">{{ old('keterangan') }}</textarea>
                             @error('keterangan')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
@@ -145,10 +189,115 @@
 
                         <button type="submit" class="btn btn-primary">Simpan</button>
                     </form>
+
                 </div>
             </div>
         </div>
     </div>
+    @foreach ($stockBarangMasuk as $item)
+        <div class="modal fade" id="editModal{{ $item->id }}" tabindex="-1" aria-labelledby="editModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel">Edit Barang Masuk</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="{{ route('barang.masuk.update', $item->id) }}" method="POST"
+                            enctype="multipart/form-data">
+                            @csrf
+                            @method('PUT')
+
+                            <!-- Input Nama Barang -->
+                            <div class="form-group">
+                                <label for="nama_barang">Nama Barang</label>
+                                <input type="text" class="form-control @error('nama_barang') is-invalid @enderror"
+                                    id="nama_barang" name="nama_barang"
+                                    value="{{ old('nama_barang', $item->nama_barang) }}">
+                                @error('nama_barang')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+
+                            <!-- Input Stok -->
+                            <div class="form-group">
+                                <label for="stok">Stok</label>
+                                <input type="number" class="form-control @error('stok') is-invalid @enderror"
+                                    id="stok" name="stok" value="{{ old('stok', $item->stok) }}">
+                                @error('stok')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+
+                            <!-- Input Harga -->
+                            <div class="form-group">
+                                <label for="harga">Harga</label>
+                                <input type="text" class="form-control @error('harga') is-invalid @enderror"
+                                    id="harga" name="harga" value="{{ old('harga', $item->harga) }}">
+                                @error('harga')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+
+                            <!-- Input Foto -->
+                            <div class="form-group">
+                                <label for="foto">Foto</label>
+                                <div class="input-group mb-3">
+                                    <div class="custom-file">
+                                        <input type="file"
+                                            class="custom-file-input @error('foto') is-invalid @enderror" id="foto"
+                                            name="foto" onchange="previewImage()">
+                                        <label class="custom-file-label" for="foto" id="foto_label">Choose
+                                            file</label>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 1rem;"></div>
+
+                                @if (isset($item->foto))
+                                    <p>Foto path: {{ asset('storage/barang_foto/' . $item->foto) }}</p>
+                                    <img src="{{ asset('storage/barang_foto/' . $item->foto) }}" id="preview-image"
+                                        width="75" height="75" style="object-fit: cover;" />
+                                @else
+                                    <img src="" id="preview-image" style="display: none; object-fit: cover;"
+                                        width="75" height="75" />
+                                @endif
+
+                                @error('foto')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+
+
+                            <!-- Input Keterangan -->
+                            <div class="form-group">
+                                <label for="keterangan">Keterangan</label>
+                                <textarea class="form-control @error('keterangan') is-invalid @enderror" id="keterangan" name="keterangan">{{ old('keterangan', $item->keterangan) }}</textarea>
+                                @error('keterangan')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Update Barang</button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
 @endsection
 @push('javascript')
     <!-- DataTables  & Plugins -->
@@ -164,6 +313,7 @@
     <script src="{{ asset('plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(function() {
             $("#example1").DataTable({
@@ -217,5 +367,44 @@
                 imgPreview.style.display = 'block';
             }
         }
+
+        // alert
+        @if (session('success'))
+            Swal.fire({
+                title: "Berhasil!",
+                text: "{{ session('success') }}",
+                icon: "success",
+                confirmButtonText: "Tutup"
+            });
+        @endif
+
+        @if (session('error'))
+            Swal.fire({
+                title: "Gagal!",
+                text: "{{ session('error') }}",
+                icon: "error",
+                confirmButtonText: "Tutup"
+            });
+        @endif
+
+        document.querySelectorAll('.delete-form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: 'Data ini akan dihapus secara permanen!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Hapus',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
     </script>
 @endpush

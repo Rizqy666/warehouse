@@ -34,11 +34,16 @@
                             <td><?php echo e($item->email); ?></td>
                             <td><?php echo e($item->role); ?></td>
                             <td>
-                                <a href="<?php echo e(route('users.edit', $item->id)); ?>" class="btn btn-primary btn-sm">Edit</a>
-                                <form action="<?php echo e(route('users.destroy', $item->id)); ?>" method="POST" class="d-inline">
+                                <button class="btn btn-primary btn-sm" data-toggle="modal"
+                                    data-target="#editModal<?php echo e($item->id); ?>">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form action="<?php echo e(route('users.destroy', $item->id)); ?>" method="POST"
+                                    class="d-inline delete-form">
                                     <?php echo csrf_field(); ?>
                                     <?php echo method_field('DELETE'); ?>
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    <button type="submit" class="btn btn-danger btn-sm"><i
+                                            class="fas fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -174,12 +179,71 @@ endif;
 unset($__errorArgs, $__bag); ?>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+    <?php $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <div class="modal fade" id="editModal<?php echo e($item->id); ?>" tabindex="-1" role="dialog"
+            aria-labelledby="editModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel">Edit User</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="<?php echo e(route('users.update', $item->id)); ?>">
+                            <?php echo csrf_field(); ?>
+                            <?php echo method_field('PUT'); ?>
+
+                            <div class="form-group">
+                                <label for="name-<?php echo e($item->id); ?>">Name</label>
+                                <input type="text" class="form-control" id="name-<?php echo e($item->id); ?>" name="name"
+                                    value="<?php echo e($item->name); ?>" autocomplete="name">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email-<?php echo e($item->id); ?>">Email</label>
+                                <input type="email" class="form-control" id="email-<?php echo e($item->id); ?>"
+                                    name="email" value="<?php echo e($item->email); ?>" autocomplete="email">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password-<?php echo e($item->id); ?>">Password</label>
+                                <input type="password" class="form-control" id="password-<?php echo e($item->id); ?>"
+                                    name="password" autocomplete="new-password">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password-confirm-<?php echo e($item->id); ?>">Confirm Password</label>
+                                <input type="password" class="form-control" id="password-confirm-<?php echo e($item->id); ?>"
+                                    name="password_confirmation" autocomplete="new-password">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="role-<?php echo e($item->id); ?>">Role</label>
+                                <select class="form-control" id="role-<?php echo e($item->id); ?>" name="role">
+                                    <option value="user" <?php echo e($item->role == 'user' ? 'selected' : ''); ?>>User</option>
+                                    <option value="admin" <?php echo e($item->role == 'admin' ? 'selected' : ''); ?>>Admin</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Update</button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 <?php $__env->stopSection(); ?>
 <?php $__env->startPush('javascript'); ?>
     <!-- DataTables  & Plugins -->
@@ -195,6 +259,7 @@ unset($__errorArgs, $__bag); ?>
     <script src="<?php echo e(asset('plugins/datatables-buttons/js/buttons.html5.min.js')); ?>"></script>
     <script src="<?php echo e(asset('plugins/datatables-buttons/js/buttons.print.min.js')); ?>"></script>
     <script src="<?php echo e(asset('plugins/datatables-buttons/js/buttons.colVis.min.js')); ?>"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(function() {
             $("#example1").DataTable({
@@ -240,13 +305,43 @@ unset($__errorArgs, $__bag); ?>
                 ],
             }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
-            $('#example1 tbody').on('click', 'tr', function() {
-                var data = $('#example1').DataTable().row(this).data();
-                $('#exampleModal form').attr('action', `<?php echo e(route('users.update', ':id')); ?>`.replace(':id',
-                    data.id));
-                $('#name').val(data.name);
-                $('#email').val(data.email);
-                $('#role').val(data.role);
+        });
+        // alert
+        <?php if(session('success')): ?>
+            Swal.fire({
+                title: "Berhasil!",
+                text: "<?php echo e(session('success')); ?>",
+                icon: "success",
+                confirmButtonText: "Tutup"
+            });
+        <?php endif; ?>
+
+        <?php if(session('error')): ?>
+            Swal.fire({
+                title: "Gagal!",
+                text: "<?php echo e(session('error')); ?>",
+                icon: "error",
+                confirmButtonText: "Tutup"
+            });
+        <?php endif; ?>
+
+        document.querySelectorAll('.delete-form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: 'Data ini akan dihapus secara permanen!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Hapus',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
             });
         });
     </script>

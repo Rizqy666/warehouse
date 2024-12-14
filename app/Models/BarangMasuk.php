@@ -15,19 +15,16 @@ class BarangMasuk extends Model
         'user_id',
         'kode_barang',
         'nama_barang',
-        'jumlah',
+        'stok',
         'tanggal',
         'keterangan',
         'foto',
+        'is_masuk',
+        'harga',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function barangKeluar()
-    {
-        return $this->hasMany(BarangKeluar::class);
     }
 }

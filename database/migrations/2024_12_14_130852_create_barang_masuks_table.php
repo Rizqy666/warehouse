@@ -13,12 +13,14 @@ return new class extends Migration {
         Schema::create('barang_masuks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->string('kode_barang');
+            $table->string('kode_barang')->unique();
             $table->string('nama_barang');
-            $table->integer('jumlah');
-            $table->date('tanggal');
-            $table->string('keterangan');
-            $table->string('foto');
+            $table->integer('stok')->default(0);
+            $table->date('tanggal')->nullable();
+            $table->text('keterangan')->nullable();
+            $table->string('foto')->nullable();
+            $table->boolean('is_masuk')->default(true);
+            $table->bigInteger('harga')->nullable();
             $table->timestamps();
         });
     }

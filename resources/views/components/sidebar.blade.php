@@ -10,8 +10,17 @@
         </li>
         <li class="nav-header">MANAGEMENT DATA</li>
         <li class="nav-item">
-            <a href="{{ route('barang-masuk.index') }}"
-                class="nav-link{{ request()->routeIs('barang-masuk.index') ? ' active' : '' }}">
+            <a href="{{ route('stock.barang.index') }}"
+                class="nav-link{{ request()->routeIs('stock.barang.index') ? ' active' : '' }}">
+                <i class="nav-icon fa-solid fa-table"></i>
+                <p>
+                    Total Stok Barang
+                </p>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('barang.masuk.index') }}"
+                class="nav-link{{ request()->routeIs('barang.masuk.index') ? ' active' : '' }}">
                 <i class="nav-icon fa-solid fa-circle-down"></i>
                 <p>
                     Barang Masuk
@@ -19,14 +28,16 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ route('barang-keluar.index') }}"
-                class="nav-link{{ request()->routeIs('barang-keluar.index') ? ' active' : '' }}">
+            <a href="{{ route('barang.keluar.index') }}"
+                class="nav-link{{ request()->routeIs('barang.keluar.index') ? ' active' : '' }}">
                 <i class="nav-icon fa-solid fa-circle-up"></i>
                 <p>
                     Barang Keluar
                 </p>
             </a>
         </li>
+
+
         <li class="nav-header">MANAGEMENT USER</li>
         <li class="nav-item">
             <a href="{{ route('logs.index') }}" class="nav-link{{ request()->routeIs('logs.index') ? ' active' : '' }}"
