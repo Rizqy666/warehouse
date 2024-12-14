@@ -14,15 +14,12 @@ class LogController extends Controller
     {
         $logs = \App\Models\Log::query();
 
-        // Filter berdasarkan query jika ada
         if ($request->has('q')) {
             $logs->where('activity', 'like', '%' . $request->input('q') . '%');
         }
 
-        // Menggunakan pagination untuk mengambil data per halaman
         $data = $logs->paginate($request->input('pageSize', 15));
 
-        // Mengembalikan data ke view (bukan JSON)
         return view('pages.logs.index', compact('data'));
     }
 

@@ -35,11 +35,16 @@
                             <td>{{ $item->email }}</td>
                             <td>{{ $item->role }}</td>
                             <td>
-                                <a href="{{ route('users.edit', $item->id) }}" class="btn btn-primary btn-sm">Edit</a>
-                                <form action="{{ route('users.destroy', $item->id) }}" method="POST" class="d-inline">
+                                <button class="btn btn-primary btn-sm" data-toggle="modal"
+                                    data-target="#editModal{{ $item->id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form action="{{ route('users.destroy', $item->id) }}" method="POST"
+                                    class="d-inline delete-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    <button type="submit" class="btn btn-danger btn-sm"><i
+                                            class="fas fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -119,12 +124,71 @@
                             @enderror
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+    @foreach ($users as $item)
+        <div class="modal fade" id="editModal{{ $item->id }}" tabindex="-1" role="dialog"
+            aria-labelledby="editModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel">Edit User</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ route('users.update', $item->id) }}">
+                            @csrf
+                            @method('PUT')
+
+                            <div class="form-group">
+                                <label for="name-{{ $item->id }}">Name</label>
+                                <input type="text" class="form-control" id="name-{{ $item->id }}" name="name"
+                                    value="{{ $item->name }}" autocomplete="name">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email-{{ $item->id }}">Email</label>
+                                <input type="email" class="form-control" id="email-{{ $item->id }}"
+                                    name="email" value="{{ $item->email }}" autocomplete="email">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password-{{ $item->id }}">Password</label>
+                                <input type="password" class="form-control" id="password-{{ $item->id }}"
+                                    name="password" autocomplete="new-password">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password-confirm-{{ $item->id }}">Confirm Password</label>
+                                <input type="password" class="form-control" id="password-confirm-{{ $item->id }}"
+                                    name="password_confirmation" autocomplete="new-password">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="role-{{ $item->id }}">Role</label>
+                                <select class="form-control" id="role-{{ $item->id }}" name="role">
+                                    <option value="user" {{ $item->role == 'user' ? 'selected' : '' }}>User</option>
+                                    <option value="admin" {{ $item->role == 'admin' ? 'selected' : '' }}>Admin</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Update</button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
 @endsection
 @push('javascript')
     <!-- DataTables  & Plugins -->
@@ -140,6 +204,7 @@
     <script src="{{ asset('plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(function() {
             $("#example1").DataTable({
@@ -185,13 +250,43 @@
                 ],
             }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
-            $('#example1 tbody').on('click', 'tr', function() {
-                var data = $('#example1').DataTable().row(this).data();
-                $('#exampleModal form').attr('action', `{{ route('users.update', ':id') }}`.replace(':id',
-                    data.id));
-                $('#name').val(data.name);
-                $('#email').val(data.email);
-                $('#role').val(data.role);
+        });
+        // alert
+        @if (session('success'))
+            Swal.fire({
+                title: "Berhasil!",
+                text: "{{ session('success') }}",
+                icon: "success",
+                confirmButtonText: "Tutup"
+            });
+        @endif
+
+        @if (session('error'))
+            Swal.fire({
+                title: "Gagal!",
+                text: "{{ session('error') }}",
+                icon: "error",
+                confirmButtonText: "Tutup"
+            });
+        @endif
+
+        document.querySelectorAll('.delete-form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: 'Data ini akan dihapus secara permanen!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Hapus',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
             });
         });
     </script>

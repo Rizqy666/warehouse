@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -12,10 +13,12 @@ return new class extends Migration {
     {
         Schema::create('barang_keluars', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('barang_masuk_id')->constrained('barang_masuks')->onDelete('cascade');
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->integer('jumlah');
-            $table->string('keterangan');
+            $table->foreignId('barang_masuk_id')->nullable()->constrained('barang_masuks')->onDelete('set null');
+            $table->string('jumlah');
+            $table->date('tanggal');
+            $table->text('keterangan')->nullable();
+            $table->boolean('is_keluar')->default(true);
             $table->timestamps();
         });
     }

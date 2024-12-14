@@ -9,77 +9,118 @@ use Illuminate\Http\Request;
 
 class BarangKeluarController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $barangKeluar = BarangKeluar::all();
         $barangMasuk = BarangMasuk::all();
         return view('pages.barang-keluar.index', compact('barangKeluar', 'barangMasuk'));
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
             'barang_masuk_id' => 'required|exists:barang_masuks,id',
             'jumlah' => 'required|integer|min:1',
+            'tanggal' => 'required|date',
             'keterangan' => 'nullable|string',
         ]);
 
-        $barangKeluar = new BarangKeluar();
-        $barangKeluar->barang_masuk_id = $request->input('barang_masuk_id');
-        $barangKeluar->jumlah = $request->input('jumlah');
-        $barangKeluar->keterangan = $request->input('keterangan');
-        $barangKeluar->user_id = auth()->id();
+        $barangMasukId = $request->input('barang_masuk_id');
+        $jumlah = $request->input('jumlah');
+        $tanggal = $request->input('tanggal');
+        $keterangan = $request->input('keterangan', '');
 
-        $barangKeluar->save();
-        // log
-        $barangMasuk = BarangMasuk::find($request->input('barang_masuk_id'));
-        LogHelper::logActivity('Create', 'User menambahkan barang keluar: ' . $barangMasuk->nama_barang);
-        return redirect()->route('barang-keluar.index')->with('success', 'Barang keluar berhasil disimpan.');
+        $barangMasuk = BarangMasuk::find($barangMasukId);
+
+        if (!$barangMasuk) {
+            return redirect()->route('barang.keluar.index')->with('error', 'Barang masuk tidak ditemukan');
+        }
+
+        if ($barangMasuk->stok < $jumlah) {
+            return redirect()->route('barang.keluar.index')->with('error', 'Stok tidak cukup');
+        }
+
+        $barangMasuk->stok -= $jumlah;
+        $barangMasuk->save();
+
+        $barangKeluar = BarangKeluar::create([
+            'user_id' => auth()->user()->id,
+            'barang_masuk_id' => $barangMasukId,
+            'jumlah' => $jumlah,
+            'tanggal' => $tanggal,
+            'keterangan' => $keterangan,
+            'is_keluar' => true,
+        ]);
+
+        LogHelper::logActivity('Create', 'User menambahkan barang keluar: ' . $barangKeluar->jumlah . ' barang ' . $barangMasuk->nama_barang);
+
+        return redirect()->route('barang.keluar.index')->with('success', 'Barang berhasil dikeluarkan');
+    }
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'barang_masuk_id' => 'required|exists:barang_masuks,id',
+            'jumlah' => 'required|integer|min:1',
+            'tanggal' => 'required|date',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        $barangMasukId = $request->input('barang_masuk_id');
+        $jumlah = $request->input('jumlah');
+        $tanggal = $request->input('tanggal');
+        $keterangan = $request->input('keterangan', '');
+
+        $barangKeluar = BarangKeluar::find($id);
+
+        if (!$barangKeluar) {
+            return redirect()->route('barang.keluar.index')->with('error', 'Barang keluar tidak ditemukan');
+        }
+
+        $barangMasuk = BarangMasuk::find($barangMasukId);
+
+        if (!$barangMasuk) {
+            return redirect()->route('barang.keluar.index')->with('error', 'Barang masuk terkait tidak ditemukan');
+        }
+
+        $stokAwal = $barangKeluar->jumlah;
+        $stokBaru = $jumlah;
+
+        if ($barangMasuk->stok + $stokAwal - $stokBaru < 0) {
+            return redirect()->route('barang.keluar.index')->with('error', 'Stok tidak cukup');
+        }
+
+        $barangMasuk->stok = $barangMasuk->stok + $stokAwal - $stokBaru;
+        $barangMasuk->save();
+
+        $barangKeluar->update([
+            'barang_masuk_id' => $barangMasukId,
+            'jumlah' => $jumlah,
+            'tanggal' => $tanggal,
+            'keterangan' => $keterangan,
+        ]);
+
+        LogHelper::logActivity('Update', 'User memperbarui barang keluar: ' . $barangKeluar->jumlah . ' barang ' . $barangMasuk->nama_barang);
+
+        return redirect()->route('barang.keluar.index')->with('success', 'Barang berhasil diperbarui');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(BarangKeluar $barangKeluar)
+    public function destroy($id)
     {
-        //
-    }
+        $barang = BarangKeluar::findOrFail($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(BarangKeluar $barangKeluar)
-    {
-        //
-    }
+        $barang->delete();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, BarangKeluar $barangKeluar)
-    {
-        //
-    }
+        LogHelper::logActivity('Delete', 'User menghapus barang keluar: ' . $barang->barangmasuk->nama_barang);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(BarangKeluar $barangKeluar)
+        return redirect()->route('barang.keluar.index')->with('success', 'Barang berhasil dihapus');
+    }
+    protected function generateKodeBarang($namaBarang)
     {
-        //
+        $tahun = now()->year;
+
+        $kataBarang = implode('-', array_slice(explode(' ', strtolower($namaBarang)), 0, 3));
+
+        $randomNumber = rand(1000, 9999);
+
+        return 'BRG-' . $kataBarang . '-' . $tahun . $randomNumber;
     }
 }
